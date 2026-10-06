@@ -1,0 +1,387 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>VAELORA — Eau de Parfum</title>
+  <meta name="description" content="VAELORA — elegant notes, refined ingredients, unforgettable character. Discover the signature collection of fine fragrance.">
+  <meta name="theme-color" content="#E6EAE6">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='15' fill='%236E1F2E'/%3E%3Ctext x='16' y='22' font-family='Georgia' font-size='17' fill='%23E6EAE6' text-anchor='middle'%3EV%3C/text%3E%3C/svg%3E">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <!-- Fonts load without blocking first paint; the preloader hides the swap -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Italiana&family=Cormorant+Garamond:ital,wght@1,300;1,400&family=Manrope:wght@300;400;500;600&display=swap" media="print" onload="this.media='all'">
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Italiana&family=Cormorant+Garamond:ital,wght@1,300;1,400&family=Manrope:wght@300;400;500;600&display=swap"></noscript>
+  <link rel="stylesheet" href="css/style.css">
+
+  <!-- Flag JS early so the no-JS / reduced-motion fallbacks don't flash -->
+  <script>document.documentElement.classList.add('js');</script>
+</head>
+<body>
+
+  <!-- 0. PRELOADER -->
+  <div class="preloader" id="preloader" aria-hidden="true">
+    <div class="preloader__inner">
+      <p class="preloader__word" id="preloaderWord">VAELORA</p>
+      <div class="preloader__bar"><span class="preloader__fill" id="preloaderFill"></span></div>
+      <p class="preloader__meta"><span>Eau de Parfum</span><span id="preloaderPct">0%</span></p>
+    </div>
+  </div>
+
+  <a class="skip-link" href="#collection">Skip to content</a>
+
+  <!-- 1. NAV -->
+  <header class="nav" id="nav">
+    <div class="nav__inner">
+      <a class="nav__logo" href="#home" aria-label="VAELORA home">VAELORA</a>
+
+      <nav class="nav__links" aria-label="Primary">
+        <a href="#home">Home</a>
+        <a href="#collection">Collection</a>
+        <a href="#notes">Notes</a>
+        <a href="#contact">Contact</a>
+      </nav>
+
+      <div class="nav__icons">
+        <button class="icon-btn" type="button" aria-label="Search">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 21 21"/></svg>
+        </button>
+        <button class="icon-btn" type="button" aria-label="Wishlist">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.6a4.3 4.3 0 0 1 7.5 2.7c0 5.6-7.5 10.2-7.5 10.2Z"/></svg>
+        </button>
+        <button class="icon-btn" type="button" aria-label="Bag, 0 items">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 8h14l-1 12.5H6L5 8Z"/><path d="M9 8V6.5a3 3 0 0 1 6 0V8"/></svg>
+        </button>
+        <button class="burger" id="burger" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="menu">
+          <span></span><span></span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Mobile full-screen menu -->
+  <div class="menu" id="menu" aria-hidden="true">
+    <nav class="menu__links" aria-label="Mobile">
+      <a href="#home"><span>Home</span></a>
+      <a href="#collection"><span>Collection</span></a>
+      <a href="#notes"><span>Notes</span></a>
+      <a href="#contact"><span>Contact</span></a>
+    </nav>
+    <p class="menu__foot">Maison VAELORA — Paris</p>
+  </div>
+
+  <main>
+
+    <!-- 2. HERO -->
+    <section class="hero" id="home" aria-label="VAELORA Eau de Parfum">
+      <div class="hero__stage">
+        <div class="hero__word" id="heroWord" aria-hidden="true">
+          <span class="hero__word-l">VAE</span><span class="hero__word-r">LORA</span>
+        </div>
+
+        <canvas class="hero__canvas seq-canvas" id="heroCanvas" aria-hidden="true"></canvas>
+        <img class="seq-static" id="heroStatic" alt="" width="1920" height="1080" hidden>
+
+        <h1 class="sr-only">VAELORA Eau de Parfum</h1>
+
+        <div class="hero__variants">
+          <a class="variant" href="#collection">
+            <span class="variant__img">
+              <img src="assets/img/products/faceted-amber-crystal-perfume-bottle-400.webp" alt="" width="315" height="500">
+            </span>
+            <span class="variant__name">Élan</span>
+          </a>
+          <a class="variant" href="#collection">
+            <span class="variant__img">
+              <img src="assets/img/products/luxurious-black-and-crimson-perfume-bottle-400.webp" alt="" width="400" height="437">
+            </span>
+            <span class="variant__name">Noir</span>
+          </a>
+        </div>
+
+        <div class="hero__aside">
+          <p class="hero__line">Elegant notes, refined ingredients, unforgettable character.</p>
+          <a class="circle-btn" href="#collection">
+            <span class="circle-btn__ring"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+            <span class="circle-btn__label">Explore Collection</span>
+          </a>
+        </div>
+
+        <div class="hero__hint" aria-hidden="true">
+          <span>Scroll to unveil</span>
+          <i></i>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. SIGNATURE COLLECTION -->
+    <section class="collection section" id="collection">
+      <header class="section-head">
+        <p class="eyebrow">Maison VAELORA</p>
+        <h2 class="display-2 split-lines">Signature<br>Collection</h2>
+        <p class="section-head__sub">Four compositions, each poured into hand-cut crystal.</p>
+      </header>
+
+      <div class="cards" id="cards">
+        <article class="card">
+          <div class="card__arch">
+            <img class="card__bottle" src="assets/img/products/crystal-amber-perfume-decanter-800.webp"
+                 srcset="assets/img/products/crystal-amber-perfume-decanter-400.webp 317w, assets/img/products/crystal-amber-perfume-decanter-800.webp 633w"
+                 sizes="(max-width: 767px) 70vw, (max-width: 1023px) 45vw, 22vw"
+                 alt="Ambre Lumière perfume in a faceted amber crystal decanter" width="633" height="1000" loading="lazy" decoding="async">
+          </div>
+          <div class="card__meta">
+            <h3 class="card__name">Ambre Lumière</h3>
+            <p class="card__price">€185 <span>· 100 ml</span></p>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="card__arch">
+            <img class="card__bottle" src="assets/img/products/faceted-teal-crystal-perfume-bottle-800.webp"
+                 srcset="assets/img/products/faceted-teal-crystal-perfume-bottle-400.webp 343w, assets/img/products/faceted-teal-crystal-perfume-bottle-800.webp 687w"
+                 sizes="(max-width: 767px) 70vw, (max-width: 1023px) 45vw, 22vw"
+                 alt="Mer Céleste perfume in a teal crystal bottle" width="687" height="1000" loading="lazy" decoding="async">
+          </div>
+          <div class="card__meta">
+            <h3 class="card__name">Mer Céleste</h3>
+            <p class="card__price">€165 <span>· 100 ml</span></p>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="card__arch">
+            <img class="card__bottle" src="assets/img/products/luxurious-black-and-crimson-perfume-bottle-800.webp"
+                 srcset="assets/img/products/luxurious-black-and-crimson-perfume-bottle-400.webp 400w, assets/img/products/luxurious-black-and-crimson-perfume-bottle-800.webp 800w"
+                 sizes="(max-width: 767px) 70vw, (max-width: 1023px) 45vw, 22vw"
+                 alt="Rouge Noir perfume in a black and crimson bottle" width="800" height="873" loading="lazy" decoding="async">
+          </div>
+          <div class="card__meta">
+            <h3 class="card__name">Rouge Noir</h3>
+            <p class="card__price">€210 <span>· 100 ml</span></p>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="card__arch">
+            <img class="card__bottle" src="assets/img/products/rose-quartz-crystal-perfume-bottle-800.webp"
+                 srcset="assets/img/products/rose-quartz-crystal-perfume-bottle-400.webp 319w, assets/img/products/rose-quartz-crystal-perfume-bottle-800.webp 638w"
+                 sizes="(max-width: 767px) 70vw, (max-width: 1023px) 45vw, 22vw"
+                 alt="Rose Quartz perfume in a pink faceted crystal bottle" width="638" height="1000" loading="lazy" decoding="async">
+          </div>
+          <div class="card__meta">
+            <h3 class="card__name">Rose Quartz</h3>
+            <p class="card__price">€175 <span>· 100 ml</span></p>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- 4. THE ART OF FINE FRAGRANCE -->
+    <section class="art section" id="art">
+      <div class="art__media">
+        <div class="art__circle" id="artCircle">
+          <img src="assets/img/lifestyle/elegant-perfume-mist-portrait-800.webp"
+               srcset="assets/img/lifestyle/elegant-perfume-mist-portrait-400.webp 400w, assets/img/lifestyle/elegant-perfume-mist-portrait-800.webp 800w"
+               sizes="(max-width: 767px) 86vw, 44vw"
+               alt="A woman in ivory silk lifts a VAELORA bottle to her wrist" width="800" height="800" loading="lazy" decoding="async">
+        </div>
+        <svg class="art__ring" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="49.6" pathLength="1"/></svg>
+      </div>
+
+      <div class="art__text">
+        <p class="eyebrow">Savoir-faire</p>
+        <h2 class="display-2 split-lines">The Art of<br>Fine Fragrance</h2>
+        <p class="art__p">Every VAELORA composition begins with a single raw material, sourced at its peak and studied for months before a formula takes shape.</p>
+        <p class="art__p">Our perfumers work in small batches, macerating each blend for eight weeks so the notes settle into one another like silk.</p>
+        <p class="art__p">The result is a trail that lingers, quiet at first, then unmistakably yours.</p>
+        <p class="art__sign">— Isaline Varenne, Master Perfumer</p>
+      </div>
+    </section>
+
+    <!-- 5. THE ESSENCE -->
+    <section class="notes" id="notes" aria-label="The Essence: fragrance notes">
+      <div class="notes__stage">
+        <header class="notes__head">
+          <p class="eyebrow">The Essence</p>
+          <h2 class="display-3">Anatomy of a Scent</h2>
+        </header>
+
+        <div class="notes__visual" id="notesVisual">
+          <!-- ring sits behind the canvas; the canvas darken-blends so it shows through the empty background only -->
+          <svg class="notes__ring" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="49.5" pathLength="1"/></svg>
+          <canvas class="notes__canvas seq-canvas" id="notesCanvas" aria-hidden="true"></canvas>
+          <img class="seq-static" id="notesStatic" alt="" width="1280" height="720" hidden>
+        </div>
+
+        <ol class="notes__list">
+          <li class="note note--top">
+            <svg class="note__line" viewBox="0 0 120 2" preserveAspectRatio="none" aria-hidden="true"><path d="M0 1H120" pathLength="1"/></svg>
+            <div class="note__body">
+              <span class="note__tier">Top</span>
+              <span class="note__name">Bergamot &amp; Lemon</span>
+            </div>
+          </li>
+          <li class="note note--heart">
+            <svg class="note__line" viewBox="0 0 120 2" preserveAspectRatio="none" aria-hidden="true"><path d="M120 1H0" pathLength="1"/></svg>
+            <div class="note__body">
+              <span class="note__tier">Heart</span>
+              <span class="note__name">Jasmine &amp; Peony</span>
+            </div>
+          </li>
+          <li class="note note--base">
+            <svg class="note__line" viewBox="0 0 120 2" preserveAspectRatio="none" aria-hidden="true"><path d="M0 1H120" pathLength="1"/></svg>
+            <div class="note__body">
+              <span class="note__tier">Base</span>
+              <span class="note__name">Sandalwood &amp; Vanilla</span>
+            </div>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- 6. THE ULTIMATE COLLECTION -->
+    <section class="ultimate" id="ultimate" aria-roledescription="carousel" aria-label="The Ultimate Collection">
+      <div class="ultimate__stage">
+        <header class="section-head section-head--tight">
+          <p class="eyebrow">Six expressions</p>
+          <h2 class="display-2 split-lines">The Ultimate Collection</h2>
+        </header>
+
+        <div class="carousel" id="carousel">
+          <div class="carousel__shadow" id="carShadow" aria-hidden="true"></div>
+          <div class="carousel__ring" id="carouselRing">
+            <div class="carousel__item" data-name="Élan" data-price="€190">
+              <img src="assets/img/products/faceted-amber-crystal-perfume-bottle-800.webp"
+                   srcset="assets/img/products/faceted-amber-crystal-perfume-bottle-400.webp 315w, assets/img/products/faceted-amber-crystal-perfume-bottle-800.webp 630w"
+                   sizes="(max-width: 767px) 46vw, 20vw" alt="Élan, amber crystal bottle" width="630" height="1000" loading="lazy" decoding="async">
+            </div>
+            <div class="carousel__item" data-name="Perle Déco" data-price="€220">
+              <img src="assets/img/products/art-deco-pearl-perfume-bottle-800.webp"
+                   srcset="assets/img/products/art-deco-pearl-perfume-bottle-400.webp 320w, assets/img/products/art-deco-pearl-perfume-bottle-800.webp 640w"
+                   sizes="(max-width: 767px) 46vw, 20vw" alt="Perle Déco, pearl white art deco bottle" width="640" height="1000" loading="lazy" decoding="async">
+            </div>
+            <div class="carousel__item" data-name="Prune Velours" data-price="€205">
+              <img src="assets/img/products/faceted-plum-crystal-perfume-bottle-800.webp"
+                   srcset="assets/img/products/faceted-plum-crystal-perfume-bottle-400.webp 320w, assets/img/products/faceted-plum-crystal-perfume-bottle-800.webp 639w"
+                   sizes="(max-width: 767px) 46vw, 20vw" alt="Prune Velours, plum crystal bottle" width="639" height="1000" loading="lazy" decoding="async">
+            </div>
+            <div class="carousel__item" data-name="Glacier" data-price="€160">
+              <img src="assets/img/products/icy-blue-luxury-perfume-bottle-800.webp"
+                   srcset="assets/img/products/icy-blue-luxury-perfume-bottle-400.webp 172w, assets/img/products/icy-blue-luxury-perfume-bottle-800.webp 345w"
+                   sizes="(max-width: 767px) 46vw, 20vw" alt="Glacier, slim icy blue bottle" width="345" height="1000" loading="lazy" decoding="async">
+            </div>
+            <div class="carousel__item" data-name="Olivine" data-price="€175">
+              <img src="assets/img/products/luxury-olive-glass-perfume-bottle-800.webp"
+                   srcset="assets/img/products/luxury-olive-glass-perfume-bottle-400.webp 395w, assets/img/products/luxury-olive-glass-perfume-bottle-800.webp 789w"
+                   sizes="(max-width: 767px) 46vw, 20vw" alt="Olivine, round olive green bottle" width="789" height="1000" loading="lazy" decoding="async">
+            </div>
+            <div class="carousel__item" data-name="Bois d’Ambre" data-price="€185">
+              <img src="assets/img/products/amber-glass-cologne-with-wooden-cap-800.webp"
+                   srcset="assets/img/products/amber-glass-cologne-with-wooden-cap-400.webp 330w, assets/img/products/amber-glass-cologne-with-wooden-cap-800.webp 660w"
+                   sizes="(max-width: 767px) 46vw, 20vw" alt="Bois d’Ambre, amber glass bottle with a wooden cap" width="660" height="1000" loading="lazy" decoding="async">
+            </div>
+          </div>
+        </div>
+
+        <div class="carousel__controls">
+          <button class="circle-btn circle-btn--icon" type="button" id="carPrev" aria-label="Previous fragrance">
+            <span class="circle-btn__ring"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg></span>
+          </button>
+          <div class="carousel__caption" aria-live="polite">
+            <p class="carousel__name" id="carName">Élan</p>
+            <p class="carousel__price" id="carPrice">€190 · 100 ml</p>
+          </div>
+          <button class="circle-btn circle-btn--icon" type="button" id="carNext" aria-label="Next fragrance">
+            <span class="circle-btn__ring"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 7. MADE FOR EVERY MOMENT -->
+    <section class="moment section" id="moment">
+      <div class="moment__text">
+        <p class="eyebrow">Day into night</p>
+        <h2 class="display-2 split-lines">Made for<br>Every Moment</h2>
+        <p class="moment__p">From the first espresso to the last dance, VAELORA unfolds slowly on skin, changing with you as the hours pass.</p>
+        <ul class="moment__list">
+          <li>Long-lasting eau de parfum, 20% concentration</li>
+          <li>Refillable crystal, made to be kept for a lifetime</li>
+        </ul>
+        <a class="text-link" href="#ultimate">Explore <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+      </div>
+
+      <div class="moment__cluster">
+        <figure class="bubble bubble--a" data-speed="-10">
+          <img src="assets/img/lifestyle/golden-hour-perfume-elegance-800.webp"
+               srcset="assets/img/lifestyle/golden-hour-perfume-elegance-400.webp 400w, assets/img/lifestyle/golden-hour-perfume-elegance-800.webp 800w"
+               sizes="(max-width: 767px) 60vw, 28vw" alt="Perfume held at the collarbone in golden light" width="800" height="800" loading="lazy" decoding="async">
+        </figure>
+        <figure class="bubble bubble--b" data-speed="-25">
+          <img src="assets/img/lifestyle/elegant-fragrance-portrait-800.webp"
+               srcset="assets/img/lifestyle/elegant-fragrance-portrait-400.webp 400w, assets/img/lifestyle/elegant-fragrance-portrait-800.webp 800w"
+               sizes="(max-width: 767px) 44vw, 18vw" alt="A man applying fragrance to his neck" width="800" height="800" loading="lazy" decoding="async">
+        </figure>
+        <figure class="bubble bubble--c" data-speed="-40">
+          <img src="assets/img/lifestyle/warm-embrace-with-a-ribboned-gift-800.webp"
+               srcset="assets/img/lifestyle/warm-embrace-with-a-ribboned-gift-400.webp 400w, assets/img/lifestyle/warm-embrace-with-a-ribboned-gift-800.webp 800w"
+               sizes="(max-width: 767px) 38vw, 15vw" alt="A woman smiling as she hugs a gift box with an oxblood ribbon" width="800" height="800" loading="lazy" decoding="async">
+        </figure>
+      </div>
+    </section>
+  </main>
+
+  <!-- 8. FOOTER -->
+  <footer class="footer" id="contact">
+    <div class="footer__contact">
+      <div>
+        <p class="eyebrow">Visit the Maison</p>
+        <p class="footer__addr">14 Rue du Faubourg Saint-Honoré<br>75008 Paris</p>
+      </div>
+      <div>
+        <p class="eyebrow">Write to us</p>
+        <p class="footer__addr"><a href="mailto:maison@vaelora.example">maison@vaelora.example</a></p>
+      </div>
+      <form class="newsletter" onsubmit="event.preventDefault(); this.classList.add('is-done');">
+        <label class="eyebrow" for="nlEmail">Private letters</label>
+        <div class="newsletter__row">
+          <input id="nlEmail" type="email" placeholder="Your email" required autocomplete="email">
+          <button class="circle-btn circle-btn--icon" type="submit" aria-label="Subscribe">
+            <span class="circle-btn__ring"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+          </button>
+        </div>
+        <p class="newsletter__done">Merci. You are on the list.</p>
+      </form>
+    </div>
+
+    <div class="footer__gallery" id="gallery">
+      <figure class="g-item"><img src="assets/img/gallery/crystal-blue-perfume-in-morning-light-400.webp" srcset="assets/img/gallery/crystal-blue-perfume-in-morning-light-400.webp 400w, assets/img/gallery/crystal-blue-perfume-in-morning-light-800.webp 800w" sizes="(max-width: 767px) 40vw, 16vw" alt="Blue perfume on white linen" width="400" height="400" loading="lazy" decoding="async"></figure>
+      <figure class="g-item"><img src="assets/img/gallery/amber-elixir-and-new-growth-400.webp" srcset="assets/img/gallery/amber-elixir-and-new-growth-400.webp 400w, assets/img/gallery/amber-elixir-and-new-growth-800.webp 800w" sizes="(max-width: 767px) 40vw, 16vw" alt="Amber elixir beside a seedling" width="400" height="400" loading="lazy" decoding="async"></figure>
+      <figure class="g-item g-item--lg"><img src="assets/img/gallery/golden-mist-perfume-spray-400.webp" srcset="assets/img/gallery/golden-mist-perfume-spray-400.webp 400w, assets/img/gallery/golden-mist-perfume-spray-800.webp 800w" sizes="(max-width: 767px) 52vw, 22vw" alt="Golden perfume mist" width="400" height="400" loading="lazy" decoding="async"></figure>
+      <figure class="g-item"><img src="assets/img/gallery/faceted-rose-perfume-still-life-400.webp" srcset="assets/img/gallery/faceted-rose-perfume-still-life-400.webp 400w, assets/img/gallery/faceted-rose-perfume-still-life-800.webp 800w" sizes="(max-width: 767px) 40vw, 16vw" alt="Rose perfume among red roses" width="400" height="400" loading="lazy" decoding="async"></figure>
+      <figure class="g-item"><img src="assets/img/gallery/luxury-black-perfume-amidst-smoke-400.webp" srcset="assets/img/gallery/luxury-black-perfume-amidst-smoke-400.webp 400w, assets/img/gallery/luxury-black-perfume-amidst-smoke-800.webp 800w" sizes="(max-width: 767px) 40vw, 16vw" alt="Black perfume bottle in smoke" width="400" height="400" loading="lazy" decoding="async"></figure>
+    </div>
+
+    <div class="footer__mark" aria-hidden="true"><span id="footerMark">VAELORA</span></div>
+
+    <div class="footer__bar">
+      <p>© 2026 VAELORA Parfums. All rights reserved.</p>
+      <nav aria-label="Legal">
+        <a href="#">Privacy</a>
+        <a href="#">Terms</a>
+        <a href="#">Cookies</a>
+      </nav>
+    </div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/ScrollTrigger.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/SplitText.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/lenis@1.3.26/dist/lenis.min.js" defer></script>
+  <script src="js/sequence.js" defer></script>
+  <script src="js/main.js" defer></script>
+</body>
+</html>
