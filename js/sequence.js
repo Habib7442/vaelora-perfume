@@ -20,6 +20,8 @@
       this.canvas = canvas;
       // fit 'contain' + transparent: the canvas IS the frame box; the frame is drawn
       // contain-fit with its edges faded to transparent (the page shows through).
+      // fit 'width': the frame's width always equals the canvas width (any extra height is
+      // cropped top/bottom, split by focusY) — no frame edge can ever show at the sides.
       this.fit = fit;
       this.transparent = transparent;
       this.ctx = canvas.getContext('2d', { alpha: transparent });
@@ -205,7 +207,9 @@
 
       const img = this.frames[src];
       const iw = img.width, ih = img.height;
-      if (this.rect || this.fit === 'contain') {
+      if (this.fit === 'width') {
+        this._drawWidth(img, iw, ih);
+      } else if (this.rect || this.fit === 'contain') {
         this._drawContain(img, iw, ih);
       } else {
         // object-fit: cover
@@ -262,6 +266,29 @@
           edge(0, dy, 0, dy + fy, dx, dy, dw, fy);                       // top
           edge(0, dy + dh, 0, dy + dh - fy, dx, dy + dh - fy, dw, fy);   // bottom
         }
+        ctx.globalCompositeOperation = 'source-over';
+      }
+    }
+
+    _drawWidth(img, iw, ih) {
+      const { ctx, canvas } = this;
+      const cw = canvas.width, ch = canvas.height;
+      const dh = Math.round((ih * cw) / iw);
+      const dy = Math.round(dh > ch ? (ch - dh) * this.focusY : (ch - dh) / 2);
+      if (this.transparent) ctx.clearRect(0, 0, cw, ch);
+      else { ctx.fillStyle = this.bg; ctx.fillRect(0, 0, cw, ch); }
+      ctx.drawImage(img, 0, dy, cw, dh);
+      // hairline side safety fade only (top/bottom are faded by the CSS mask)
+      const f = Math.round(cw * this.feather);
+      if (f > 0) {
+        const solid = this.transparent ? '#000' : this.bg;
+        const clear = this.transparent ? 'rgba(0,0,0,0)' : this.bgClear;
+        if (this.transparent) ctx.globalCompositeOperation = 'destination-out';
+        [[0, f, 0], [cw, cw - f, cw - f]].forEach(([x0, x1, x]) => {
+          const g = ctx.createLinearGradient(x0, 0, x1, 0);
+          g.addColorStop(0, solid); g.addColorStop(1, clear);
+          ctx.fillStyle = g; ctx.fillRect(x, 0, f, ch);
+        });
         ctx.globalCompositeOperation = 'source-over';
       }
     }

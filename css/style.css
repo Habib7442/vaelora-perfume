@@ -35,6 +35,8 @@
 /* ---------- Reset ---------- */
 *, *::before, *::after { box-sizing: border-box; }
 html, body { margin: 0; overflow-x: clip; background: var(--bg); }
+html { overflow-x: hidden; }   /* older Safari ignores clip; on the root this only affects the viewport */
+@supports (overflow: clip) { html { overflow-x: clip; } }
 html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 body {
   background: var(--bg);
@@ -582,6 +584,37 @@ html:not(.js) .preloader { display: none; }
   flex-direction: row; justify-content: center;
 }
 .notes--stacked .note__line { display: none; }
+
+/* Phones: the frame is drawn full-bleed (width = screen width), so only the top and bottom
+   need fading (10%); main.js adds a hairline 4% side fade inside the canvas as a safety net.
+   Section colour = notes-m frame 1's left/right edge pixels at mid-height (#E7EAE8), eased
+   in from / out to the page grey at the very top and bottom of the section. */
+.notes--phone.notes__stage {
+  background: linear-gradient(180deg, var(--bg) 0, #E7EAE8 10svh, #E7EAE8 90svh, var(--bg) 100%);
+}
+.notes--phone .notes__visual .seq-canvas {
+  mix-blend-mode: normal;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 10%, #000 90%, transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent 0%, #000 10%, #000 90%, transparent 100%);
+}
+.notes--phone .notes__visual .seq-static {        /* reduced motion: same width-fit look */
+  mix-blend-mode: normal;
+  object-fit: cover; object-position: 50% 35%;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 10%, #000 90%, transparent 100%), linear-gradient(90deg, transparent, #000 4%, #000 96%, transparent);
+  -webkit-mask-composite: source-in;
+  mask-image: linear-gradient(to bottom, transparent 0%, #000 10%, #000 90%, transparent 100%), linear-gradient(90deg, transparent, #000 4%, #000 96%, transparent);
+  mask-composite: intersect;
+}
+.notes--phone .notes__ring { display: none; }
+.notes--phone .notes__head { text-shadow: 0 0 12px var(--bg), 0 0 24px var(--bg); }
+/* TOP / HEART / BASE as one centred row so all three fit under an ~80svh canvas */
+.notes--phone .notes__list {
+  inset: auto var(--gutter);
+  max-width: none;
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0 10px;
+}
+.notes--phone .note__name { font-size: clamp(14px, 4.1vw, 17px); white-space: normal; line-height: 1.15; }
+.notes--phone .note { align-items: flex-start; }      /* tags line up even when a name wraps */
 .notes--stacked .note__body { text-align: center; gap: 2px; }
 .notes--stacked .note__name { font-size: 18px; }
 
@@ -640,6 +673,68 @@ html:not(.js) .preloader { display: none; }
 @media (max-width: 767px) {
   .carousel__caption { min-width: 0; flex: 1; }
 }
+
+/* ---------- Phones: swipe carousel (built by main.js, replaces the 3D ring) ---------- */
+.ultimate--swipe .ultimate__stage {          /* a normal section: no pin, no fixed height */
+  height: auto;
+  padding: clamp(4rem, 14vw, 6rem) 0;
+  overflow: visible;
+}
+.ultimate--swipe .section-head { margin-bottom: 32px; }            /* heading → bottles */
+.ultimate--swipe .carousel,
+.ultimate--swipe .carousel__controls { display: none; }
+
+.mcar { width: 100%; }
+.mcar__track {
+  display: flex;
+  overflow-x: auto; overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  padding-inline: 14vw;                      /* 72vw slides → neighbours peek 14vw each side */
+  scrollbar-width: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.mcar__track::-webkit-scrollbar { display: none; }
+.mcar__track:focus-visible { outline: 1px solid var(--accent); outline-offset: -1px; }
+.mcar__slide { flex: 0 0 72vw; margin: 0; scroll-snap-align: center; }
+/* Fixed box, bottles contained and standing on the box's base (as in the signature cards) */
+.mcar__box {
+  height: 42svh; width: 100%;
+  transform-origin: 50% 100%;
+}
+.mcar__box img {
+  display: block; width: 100%; height: 100%;
+  object-fit: contain; object-position: 50% 100%;
+  pointer-events: none; -webkit-user-drag: none; user-select: none;
+}
+.mcar__caption { margin-top: 24px; padding: 0 var(--gutter); text-align: center; }   /* bottles → name */
+.mcar__name {
+  font-family: var(--font-display); font-size: clamp(1.3rem, 5.5vw, 1.7rem);
+  letter-spacing: 0.16em; margin-right: -0.16em; text-transform: uppercase; line-height: 1.2;
+}
+.mcar__price { color: var(--muted); letter-spacing: 0.1em; margin-top: 2px; }
+.mcar__nav {
+  margin-top: 20px;                          /* price → arrows/dots */
+  display: flex; align-items: center; justify-content: center; gap: 14px;
+}
+.mcar__arrow {
+  width: 40px; height: 40px; border-radius: 50%;
+  border: 1px solid var(--accent);
+  display: grid; place-items: center;
+  transition: opacity 0.3s var(--ease), background-color 0.3s var(--ease);
+}
+.mcar__arrow svg { width: 16px; height: 16px; fill: none; stroke: var(--accent); stroke-width: 1.2; stroke-linecap: round; stroke-linejoin: round; }
+.mcar__arrow:active { background: var(--accent); }
+.mcar__arrow:active svg { stroke: #fff; }
+.mcar__arrow:disabled { opacity: 0.3; cursor: default; }
+.mcar__dots { display: flex; }
+.mcar__dot { width: 22px; height: 32px; display: grid; place-items: center; }   /* comfy tap target */
+.mcar__dot::before {
+  content: ""; width: 6px; height: 6px; border-radius: 50%;
+  background: rgba(23, 22, 28, 0.22);
+  transition: background-color 0.3s var(--ease), transform 0.3s var(--ease);
+}
+.mcar__dot.is-active::before { background: var(--accent); transform: scale(1.35); }
 
 /* =========================================================================
    7. MADE FOR EVERY MOMENT

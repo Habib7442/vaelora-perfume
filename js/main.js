@@ -63,7 +63,7 @@
         ...(name === 'hero' ? { fit: 'contain', transparent: true, feather: 0.14 } : {}),
         // Notes: same idea. Desktop frames get no top/bottom fade (the floating cap and the
         // base touch those edges in the source); CSS handles a short vertical soften.
-        ...(name === 'notes' ? { fit: 'contain', transparent: true, feather: 0.1, featherY: v === 'm' ? 0.06 : 0 } : {}),
+        ...(name === 'notes' ? { fit: 'contain', transparent: true, feather: v === 'm' ? 0.06 : 0.1, featherY: v === 'm' ? 0.06 : 0 } : {}),
       });
     }
     return seqs[key];
@@ -277,6 +277,139 @@
   })();
 
   /* =========================================================================
+     MOBILE SWIPE CAROUSEL (≤767px) — replaces the 3D ring on phones.
+     Built from the ring's own items (one source of truth), torn down by matchMedia.
+     Native scroll-snap does the swiping; depth styling follows the scroll position.
+     ========================================================================= */
+  let swipeIndex = 0;               // remembered across rebuilds (rotation, resizes)
+
+  function buildSwipeCarousel() {
+    const section = $('#ultimate');
+    const stage = $('.ultimate__stage', section);
+    const head = $('.section-head', stage);
+    const items = $$('.carousel__item');
+    const make = (tag, cls, attrs = {}) => {
+      const el = document.createElement(tag);
+      if (cls) el.className = cls;
+      Object.entries(attrs).forEach(([k, v]) => el.setAttribute(k, v));
+      return el;
+    };
+    const arrowSvg = (d) => `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${d}"/></svg>`;
+
+    const root = make('div', 'mcar');
+    const track = make('div', 'mcar__track', { tabindex: '0', role: 'group', 'aria-roledescription': 'carousel', 'aria-label': 'The Ultimate Collection, swipe to browse' });
+    const boxes = items.map((item, i) => {
+      const src = $('img', item);
+      const slide = make('figure', 'mcar__slide', { 'aria-roledescription': 'slide', 'aria-label': `${i + 1} of ${items.length}: ${item.dataset.name}` });
+      const box = make('div', 'mcar__box');
+      const img = make('img', '', {
+        src: src.getAttribute('src'), srcset: src.getAttribute('srcset'), sizes: '72vw',
+        alt: src.getAttribute('alt'), width: src.getAttribute('width'), height: src.getAttribute('height'),
+        loading: i < 2 ? 'eager' : 'lazy', decoding: 'async', draggable: 'false',
+      });
+      box.appendChild(img); slide.appendChild(box); track.appendChild(slide);
+      return box;
+    });
+    const caption = make('div', 'mcar__caption', { 'aria-live': 'polite' });
+    const nameEl = make('p', 'mcar__name');
+    const priceEl = make('p', 'mcar__price');
+    caption.append(nameEl, priceEl);
+    const nav = make('div', 'mcar__nav');
+    const prev = make('button', 'mcar__arrow', { type: 'button', 'aria-label': 'Previous fragrance' });
+    const next = make('button', 'mcar__arrow', { type: 'button', 'aria-label': 'Next fragrance' });
+    prev.innerHTML = arrowSvg('M19 12H5M11 6l-6 6 6 6');
+    next.innerHTML = arrowSvg('M5 12h14M13 6l6 6-6 6');
+    const dotsWrap = make('div', 'mcar__dots');
+    const dots = items.map((item, i) => {
+      const d = make('button', 'mcar__dot', { type: 'button', 'aria-label': `Show ${item.dataset.name}` });
+      d.addEventListener('click', () => goTo(i));
+      dotsWrap.appendChild(d);
+      return d;
+    });
+    nav.append(prev, dotsWrap, next);
+    root.append(track, caption, nav);
+    head.after(root);
+    section.classList.add('ultimate--swipe');
+
+    const N = items.length;
+    let active = -1;
+    let raf = 0;
+    const slideW = () => track.firstElementChild.offsetWidth || 1;
+
+    function setActive(i) {
+      if (i === active) return;
+      const first = active < 0;
+      active = swipeIndex = i;
+      dots.forEach((d, k) => { d.classList.toggle('is-active', k === i); d.toggleAttribute('aria-current', k === i); });
+      prev.disabled = i === 0;
+      next.disabled = i === N - 1;
+      const write = () => {
+        nameEl.textContent = items[i].dataset.name;
+        priceEl.textContent = `${items[i].dataset.price} · 100 ml`;
+      };
+      if (first || startReduced) { write(); return; }
+      gsap.timeline({ defaults: { overwrite: true } })            // crossfade: out, swap, in
+        .to([nameEl, priceEl], { autoAlpha: 0, y: -6, duration: 0.15, ease: 'power1.in' })
+        .add(write)
+        .fromTo([nameEl, priceEl], { autoAlpha: 0, y: 6 }, { autoAlpha: 1, y: 0, duration: 0.32, ease: 'power2.out', stagger: 0.04 });
+    }
+
+    // Bottle aspect (trimmed images: width/height attributes are the real glass ratio)
+    const ratios = boxes.map((box) => { const im = box.firstElementChild; return (+im.getAttribute('width') || 4) / (+im.getAttribute('height') || 5); });
+
+    // Depth without 3D: t = distance of each slide from the centre, in slide widths.
+    // Active (t=0): scale 1, opacity 1, sharp. Neighbours (t>=1): scale .75, opacity .35, 1px blur.
+    // A receding bottle also slides toward the inner edge of its slide, so the previous/next
+    // bottles visibly peek ~14vw in from each side instead of sitting mostly off-screen.
+    function update() {
+      raf = 0;
+      const W = slideW();
+      const H = boxes[0].clientHeight || 1;
+      const pos = track.scrollLeft / W;
+      boxes.forEach((box, i) => {
+        const t = Math.min(1, Math.abs(i - pos));
+        const drawn = Math.min(W, H * ratios[i]);                       // bottle width at scale 1
+        const shift = Math.max(0, (W - 0.75 * drawn) / 2 - 8) * t * Math.sign(pos - i);
+        box.style.transform = `translateX(${shift.toFixed(1)}px) scale(${(1 - 0.25 * t).toFixed(3)})`;
+        box.style.opacity = (1 - 0.65 * t).toFixed(3);
+        box.style.filter = t > 0.02 ? `blur(${t.toFixed(2)}px)` : 'none';
+      });
+      setActive(Math.max(0, Math.min(N - 1, Math.round(pos))));
+    }
+    const onScroll = () => { if (!raf) raf = requestAnimationFrame(update); };
+
+    function goTo(i, instant) {
+      i = Math.max(0, Math.min(N - 1, i));
+      track.scrollTo({ left: i * slideW(), behavior: instant || startReduced ? 'auto' : 'smooth' });
+    }
+    const onPrev = () => goTo(active - 1);
+    const onNext = () => goTo(active + 1);
+
+    track.addEventListener('scroll', onScroll, { passive: true });
+    prev.addEventListener('click', onPrev);
+    next.addEventListener('click', onNext);
+    // keep the same bottle centred when the slide width changes (rotation, resize)
+    const ro = new ResizeObserver(() => { goTo(active < 0 ? swipeIndex : active, true); update(); });
+    ro.observe(track);
+
+    goTo(swipeIndex, true);
+    update();
+
+    return {
+      head,
+      track,
+      destroy() {
+        cancelAnimationFrame(raf);
+        ro.disconnect();
+        track.removeEventListener('scroll', onScroll);
+        gsap.killTweensOf([nameEl, priceEl]);
+        root.remove();
+        section.classList.remove('ultimate--swipe');
+      },
+    };
+  }
+
+  /* =========================================================================
      Shared helpers
      ========================================================================= */
   function splitLines(el, vars) {
@@ -383,6 +516,7 @@
   const notesInit = { s: 1, y: 0 };
   let activeNotes = null;
   let notesStacked = false;
+  let notesPhone = false;           // ≤767px: full-bleed width-fit canvas (~80svh), labels row under it, no ring
   let notesReduced = false;
 
   function layoutNotes() {
@@ -391,12 +525,23 @@
     const navH = nav.offsetHeight;
     const gutter = parseFloat(getComputedStyle(nav.firstElementChild).paddingLeft) || 16;
     notesStage.classList.toggle('notes--stacked', notesStacked);
+    notesStage.classList.toggle('notes--phone', notesPhone);
     const f = activeNotes && activeNotes.frames.find(Boolean);
     const aspect = f ? f.width / f.height : (notesStacked ? 406 / 720 : 16 / 9);
     const startTop = notesHead.offsetTop + notesHead.offsetHeight + 40;   // ≥40px under the heading
 
     let x, y, w, h, bottom;
-    if (notesStacked) {
+    if (notesPhone) {
+      // Full-bleed: the 9:16 frame is drawn at the full screen width (fit 'width'), so no
+      // frame edge can show at the sides. The canvas is ~80svh tall, starting right under the
+      // nav, with the TOP / HEART / BASE row 20px below it, all inside the pinned 100svh.
+      const listH = notesList.offsetHeight;
+      y = navH;
+      h = Math.min(vh * 0.8, vh - y - 20 - listH - 14);
+      w = vw;
+      bottom = y + h;
+      notesList.style.top = `${Math.round(bottom + 20)}px`;
+    } else if (notesStacked) {
       bottom = notesList.offsetTop - 16;
       const top = navH + 12;
       h = bottom - top; w = h * aspect;
@@ -409,15 +554,21 @@
       y = (vh - h) / 2;
     }
     const h0 = Math.min(h, bottom - startTop);
+    if (!notesPhone) notesList.style.top = '';
     if (notesReduced) {
       // No scroll story: keep the heading and use the starting box as the final one.
-      h = h0; w = h * aspect; y = startTop;
+      h = h0; w = notesPhone ? vw : h * aspect; y = startTop;
       notesInit.s = 1; notesInit.y = 0;
+    } else if (notesPhone) {
+      // Phones: no scale-in (a shrunken canvas would show its edges again) — the canvas just
+      // starts lower, clear of the heading, and rises into place as the heading fades.
+      notesInit.s = 1;
+      notesInit.y = Math.max(0, Math.min(startTop - y, vh - bottom));
     } else {
       notesInit.s = h0 / h;           // scale from the top centre…
       notesInit.y = startTop - y;     // …so the box's top sits under the heading
     }
-    x = (vw - w) / 2;
+    x = notesPhone ? 0 : (vw - w) / 2;
 
     const set = (el, k, v) => el.style.setProperty(k, `${Math.round(v * 10) / 10}px`);
     set(notesVisual, '--nv-x', x); set(notesVisual, '--nv-y', y);
@@ -451,7 +602,14 @@
       const lineW = right ? vw - gutter - bodyW - 12 - px : px - gutter - bodyW - 12;
       set(el, '--line-w', Math.max(24, lineW));
     });
-    if (activeNotes) activeNotes.resize();
+    if (activeNotes) {
+      // phone: width-fit, crop biased upward so the cap is kept; tiny 4% side safety fade
+      activeNotes.fit = notesPhone ? 'width' : 'contain';
+      activeNotes.focusY = 0.35;
+      activeNotes.feather = notesPhone ? 0.04 : notesStacked ? 0.06 : 0.1;
+      activeNotes.resize();
+      activeNotes.setRect(null);            // forces a repaint with the new fit
+    }
   }
 
   let nlt;
@@ -478,9 +636,18 @@
     layoutHero();
     activeNotes = notes;
     notesStacked = stacked;
+    notesPhone = isMobile;
     notesReduced = reduce;
     notes.on('firstbatch', layoutNotes);
     layoutNotes();
+
+    // The Ultimate Collection: swipe carousel on phones; the 3D ring stays on tablet/desktop.
+    // Built in this matchMedia context so crossing 767px cleanly builds / removes it.
+    let swipe = null;
+    if (isMobile) {
+      swipe = buildSwipeCarousel();
+      ctx.add(() => () => swipe.destroy());
+    }
 
     /* ---------------- Reduced motion: static frames, simple fades ---------------- */
     if (reduce) {
@@ -662,12 +829,20 @@
 
     /* ---------------- THE ULTIMATE COLLECTION ---------------- */
     later(() => {
+      if (swipe) {
+        // Phones: a normal section (no pin); heading and track simply fade up into view.
+        gsap.from([swipe.head, swipe.track], {
+          y: 28, autoAlpha: 0, duration: 0.9, ease: 'power3.out', stagger: 0.12,
+          scrollTrigger: { trigger: '#ultimate', start: 'top 80%', once: true },
+        });
+        return;
+      }
       carousel.layout();
       const carProxy = { d: 0 };
       gsap.timeline({
         defaults: { ease: 'none' },
         scrollTrigger: {
-          trigger: '#ultimate', start: 'top top', end: isMobile ? '+=120%' : '+=150%',
+          trigger: '#ultimate', start: 'top top', end: '+=150%',
           pin: true, scrub: 0.5, anticipatePin: 1,
           // one turn = 6 steps; when scrolling settles, the nearest bottle snaps to the front
           snap: { snapTo: 1 / 6, inertia: false, directional: false, duration: { min: 0.2, max: 0.6 }, delay: 0.08, ease: 'power2.inOut' },
