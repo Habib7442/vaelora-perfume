@@ -42,6 +42,12 @@
       this.featherY = featherY == null ? feather : featherY;   // top/bottom fade; 0 = none
       this.cssW = 1;
       this.cssH = 1;
+      // Optional: onBg('r, g, b') fires whenever the drawn frame's background tone changes.
+      // The tone is the median of the frame's border pixels (splash/ingredient colours skipped).
+      this.onBg = null;
+      this._bgCache = new Map();
+      this._lastBg = '';
+      this._probe = null;
       this.maxDpr = maxDpr;
 
       this.frames = new Array(frameCount).fill(null);   // ImageBitmap | HTMLImageElement
@@ -180,6 +186,19 @@
       this._requestDraw();
     }
 
+    /** Paint the current frame right now (capture mode: no waiting for the next rAF). */
+    drawNow() {
+      if (this.rafId) { cancelAnimationFrame(this.rafId); this.rafId = 0; }
+      this.drawn = -1;
+      this._draw();
+    }
+
+    /** Resolves once every frame has been fetched and decoded (or failed). */
+    whenComplete() {
+      if (this.loadedCount >= this.frameCount) return Promise.resolve();
+      return new Promise((resolve) => this.on('complete', resolve));
+    }
+
     _requestDraw(force) {
       if (force) this.drawn = -1;
       if (this.rafId) return;
@@ -222,6 +241,41 @@
 
       this.drawn = target;
       this.drawnSource = src;
+      if (this.onBg) {
+        const tone = this._frameTone(src, img);
+        if (tone && tone !== this._lastBg) { this._lastBg = tone; this.onBg(tone); }
+      }
+    }
+
+    /** Median border colour of frame i (cached). Low-saturation pixels only, so a splash or
+        an ingredient touching the edge doesn't tint the result. */
+    _frameTone(i, img) {
+      if (this._bgCache.has(i)) return this._bgCache.get(i);
+      const W = 24, H = 42;
+      if (!this._probe) {
+        const c = document.createElement('canvas'); c.width = W; c.height = H;
+        this._probe = c.getContext('2d', { willReadFrequently: true });
+      }
+      const p = this._probe;
+      p.clearRect(0, 0, W, H);
+      p.drawImage(img, 0, 0, W, H);
+      const d = p.getImageData(0, 0, W, H).data;
+      const rs = [], gs = [], bs = [];
+      for (let y = 0; y < H; y++) {
+        for (let x = 0; x < W; x++) {
+          if (x > 1 && x < W - 2 && y > 1 && y < H - 2) continue;          // border ring only
+          const k = (y * W + x) * 4, r = d[k], g = d[k + 1], b = d[k + 2];
+          if (Math.max(r, g, b) - Math.min(r, g, b) > 16 || r + g + b < 450) continue;
+          rs.push(r); gs.push(g); bs.push(b);
+        }
+      }
+      let tone = null;
+      if (rs.length > 8) {
+        const med = (a) => { a.sort((m, n) => m - n); return a[a.length >> 1]; };
+        tone = `${med(rs)}, ${med(gs)}, ${med(bs)}`;
+      }
+      this._bgCache.set(i, tone);
+      return tone;
     }
 
     /** Contain mode: switch on with a CSS-px rect, or pass null to go back to cover. */

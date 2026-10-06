@@ -79,6 +79,14 @@ ul, ol { padding: 0; list-style: none; }
   html { scrollbar-width: thin; scrollbar-color: rgba(23, 22, 28, 0.32) var(--bg); }
 }
 
+/* Capture mode (?capture=1): a still, deterministic page for frame-by-frame recording */
+html.is-capture { scrollbar-width: none; }
+html.is-capture::-webkit-scrollbar { display: none; width: 0; height: 0; }
+.is-capture, .is-capture * { cursor: none !important; }
+.is-capture *, .is-capture *::before, .is-capture *::after { transition: none !important; animation: none !important; }
+.is-capture .preloader { display: none !important; }
+.is-capture .mcar__track { scroll-snap-type: none; }
+
 /* Lenis (inlined from lenis.css) */
 html.lenis, html.lenis body { height: auto; }
 .lenis.lenis-smooth { scroll-behavior: auto !important; }
@@ -116,7 +124,7 @@ html.lenis, html.lenis body { height: auto; }
 /* SplitText mask wrappers need a little room for descenders */
 .split-lines .line-mask, .split-lines [class*="-mask"] { padding-bottom: 0.04em; }
 
-.section { padding: clamp(5rem, 4rem + 8vw, 11rem) var(--gutter); }
+.section { padding: clamp(3.5rem, 8svh, 7.5rem) var(--gutter); }   /* ≈8vh each side → ≤ ~16vh between sections */
 .section-head { text-align: center; max-width: 900px; margin: 0 auto clamp(3rem, 2rem + 5vw, 7rem); }
 .section-head .eyebrow { margin-bottom: 1.4em; }
 .section-head__sub { margin-top: 1.6em; color: var(--muted); }
@@ -199,8 +207,7 @@ html:not(.js) .preloader { display: none; }
 .nav {
   position: fixed; inset: 0 0 auto; z-index: 80;
   height: var(--nav-h);
-  background: var(--bg);
-  transition: background-color 0.5s var(--ease);
+  background: rgb(var(--nav-rgb, var(--bg-rgb)));      /* follows the hero frame tone while the hero is on screen */
 }
 .nav__inner {
   height: 100%;
@@ -225,11 +232,11 @@ html:not(.js) .preloader { display: none; }
 @media (hover: hover) { .nav__links a:hover::after { transform: scaleX(1); transform-origin: left; } }
 .nav__icons { display: flex; justify-content: flex-end; align-items: center; gap: 2px; }
 
-.nav.is-scrolled { background: rgba(var(--bg-rgb), 0.92); }
+.nav.is-scrolled { background: rgba(var(--nav-rgb, var(--bg-rgb)), 0.92); }
 @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   @media (min-width: 1024px) {
     .nav.is-scrolled {
-      background: rgba(var(--bg-rgb), 0.7);
+      background: rgba(var(--nav-rgb, var(--bg-rgb)), 0.7);
       -webkit-backdrop-filter: blur(16px) saturate(140%);
       backdrop-filter: blur(16px) saturate(140%);
     }
@@ -280,7 +287,10 @@ html:not(.js) .preloader { display: none; }
   position: relative;
   height: 100vh; height: 100svh;
   overflow: hidden;
-  background: var(--bg);
+  /* The video's own background dims during the splash (≈229 → ≈205 → ≈229). The stage takes
+     the tone of the frame being shown (sampled per frame in main.js), so the frame's edge and
+     the page around it are always the same colour — no box at 0%, 50% or 100%. */
+  background: rgb(var(--hero-rgb, var(--bg-rgb)));
   isolation: isolate;
   /* Frame box + word size, written by main.js (layoutHero). Fallbacks keep a sane layout. */
   --frame-x: 30vw; --frame-y: calc(var(--nav-h) + 8px);
@@ -415,6 +425,15 @@ html:not(.js) .preloader { display: none; }
 .collection {
   --pad: clamp(20px, 5vw, 80px);
   padding-inline: var(--pad);
+  /* Curtain: main.js pulls this section up over the pinned hero for the hero's last 15%,
+     so it needs to paint above it, on the page grey. */
+  position: relative; z-index: 2;
+  background: var(--bg);
+}
+.collection--curtain::before {                 /* soft leading edge, so no line shows over the hero */
+  content: ""; position: absolute; left: 0; right: 0; top: -14svh; height: 14svh;
+  background: linear-gradient(to bottom, rgba(var(--bg-rgb), 0), var(--bg));
+  pointer-events: none;
 }
 .cards {
   display: grid;
@@ -477,6 +496,7 @@ html:not(.js) .preloader { display: none; }
 /* =========================================================================
    4. THE ART OF FINE FRAGRANCE
    ========================================================================= */
+.art.section { padding-bottom: 2svh; }   /* the notes heading below already sits nav + 2svh into its stage */
 .art {
   display: grid; grid-template-columns: 1.05fr 1fr; align-items: center;
   gap: clamp(3rem, 7vw, 9rem);
@@ -621,11 +641,12 @@ html:not(.js) .preloader { display: none; }
 /* =========================================================================
    6. THE ULTIMATE COLLECTION — 3D carousel
    ========================================================================= */
+.ultimate { position: relative; z-index: 2; background: var(--bg); }   /* may rise over the notes pin's empty bottom band */
 .ultimate__stage {
   position: relative;
   height: 100vh; height: 100svh;
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  padding: calc(var(--nav-h) + 16px) 0 clamp(16px, 3svh, 32px);
+  display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+  padding: calc(var(--nav-h) + 8px) 0 clamp(16px, 3svh, 32px);   /* heading right under the nav */
   overflow: hidden;
   background: var(--bg);
 }
@@ -739,6 +760,7 @@ html:not(.js) .preloader { display: none; }
 /* =========================================================================
    7. MADE FOR EVERY MOMENT
    ========================================================================= */
+.moment.section { position: relative; z-index: 2; background: var(--bg); }   /* may rise over the pinned carousel's empty bottom band */
 .moment {
   display: grid; grid-template-columns: 1fr 1.1fr; align-items: center;
   gap: clamp(3rem, 6vw, 8rem);
@@ -775,7 +797,7 @@ html:not(.js) .preloader { display: none; }
 /* =========================================================================
    8. FOOTER
    ========================================================================= */
-.footer { padding: clamp(4rem, 8vw, 8rem) 0 0; border-top: 1px solid var(--line); background: var(--bg); }
+.footer { padding: clamp(3rem, 8svh, 6rem) 0 0; border-top: 1px solid var(--line); background: var(--bg); }
 .footer__contact {
   display: grid; grid-template-columns: 1fr 1fr 1.3fr; gap: clamp(2rem, 4vw, 5rem);
   max-width: 1440px; margin: 0 auto; padding: 0 var(--gutter);

@@ -92,3 +92,24 @@ To shrink them further, either:
 - accept a smaller floor by adding a lower rung to `LADDER_D`.
 
 Lighthouse (mobile, local, 4 runs): Performance 77–94 (median 90), Accessibility 100, Best Practices 100, SEO 100. CLS ≈ 0, and the initial download is about 2.6 MB.
+
+## Capture mode (for video recording)
+
+Open the site with `?capture=1` (for example `http://localhost:3000/?capture=1`). Nothing changes for normal visitors.
+
+In capture mode the page holds still until a recorder tells it what to show:
+
+- **No Lenis:** scrolling is native.
+- **Time:** GSAP's clock no longer runs by itself.
+- **Scroll:** pinned scenes follow the scroll position exactly (no smoothing lag), and the carousel doesn't snap.
+- **Hidden:** CSS transitions, CSS animations, the cursor, the scrollbar and the preloader are off.
+- **Preloading:** every image and every hero/notes sequence frame is loaded before recording starts.
+- **Phone carousel:** on phones the swipe carousel follows the page scroll, since a recording can't swipe.
+
+| On `window` | What it does |
+|---|---|
+| `__captureReady` | A Promise that resolves when fonts, all images and all hero/notes frames are ready. |
+| `__captureStep(scrollY, timeSeconds)` | Scrolls to `scrollY`, sets the GSAP time to `timeSeconds` (counted from when capture mode started), updates ScrollTrigger and redraws the canvases. It resolves after two animation frames, when the page is ready for a screenshot. |
+| `__captureSections` | `{ hero, signature, art, notes, ultimate, moments, footer }`, each with `{ start, end }` in px. Pinned sections (hero and notes, and ultimate except on phones, where it isn't pinned) report their pin range, so `end` includes the pinned scroll. Other sections: `start` is when the section's top reaches the top of the screen, and `end` is when its bottom reaches the bottom of the screen (never before `start`). `footer.end` is the bottom of the page. |
+
+`timeSeconds` should only ever increase. Going back in time would replay finished reveals.

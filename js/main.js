@@ -37,6 +37,20 @@
   const canHover = matchMedia('(hover: hover) and (pointer: fine)').matches;
   const startReduced = matchMedia(BP.reduce).matches;
 
+  /* ---------- Capture mode (?capture=1) — frame-perfect recording by an external script ----
+     Normal visitors never get here. With ?capture=1: no Lenis, GSAP time only advances when
+     the recorder calls __captureStep, scrubs are instant, no snapping, no CSS transitions,
+     no cursor/scrollbar, no preloader, every image and sequence frame preloaded. */
+  const CAPTURE = new URLSearchParams(location.search).get('capture') === '1';
+  const SCRUB = CAPTURE ? true : 0.5;
+  let captureBase = 0;
+  if (CAPTURE) {
+    root.classList.add('is-capture');
+    gsap.ticker.remove(gsap.updateRoot);      // the recorder drives time via gsap.updateRoot()
+    gsap.ticker.lagSmoothing(0);
+    captureBase = gsap.ticker.time;
+  }
+
   /* ---------- Sequences ---------- */
   const SEQ = {
     hero:  { canvas: '#heroCanvas',  img: '#heroStatic',  d: ['assets/seq/hero-d', 150],  m: ['assets/seq/hero-m', 90] },
@@ -55,7 +69,7 @@
       const bg = getComputedStyle(root).getPropertyValue('--bg').trim() || '#E6EAE6';
       seqs[key] = new ImageSequence({
         canvas: $(SEQ[name].canvas), folder, frameCount, ext: 'webp',
-        maxDpr: v === 'm' ? 1 : 1.5,
+        maxDpr: CAPTURE ? Math.min(window.devicePixelRatio || 1, 3) : v === 'm' ? 1 : 1.5,
         concurrency: v === 'm' ? 4 : 6,
         bg,
         // Hero: the canvas is the frame box (CSS vars from layoutHero) with a radial mask;
@@ -76,7 +90,7 @@
 
   /* ---------- Lenis (smooth wheel on desktop; native touch scroll) ---------- */
   let lenis = null;
-  if (!startReduced && window.Lenis) {
+  if (!startReduced && !CAPTURE && window.Lenis) {
     lenis = new Lenis({ lerp: 0.1, smoothWheel: true, syncTouch: false, autoRaf: false });
     lenis.on('scroll', ScrollTrigger.update);
     gsap.ticker.add((t) => lenis.raf(t * 1000));
@@ -195,6 +209,13 @@
       Object.assign(geo, { R, h, w: h * 0.8 });
       wrap.style.setProperty('--cw', `${geo.w.toFixed(1)}px`);
       wrap.style.setProperty('--ch', `${h.toFixed(1)}px`);
+      // The stage is top-aligned, so the pinned screen ends with a band of empty grey under the
+      // caption. "Made for Every Moment" rises over that band (less 24px) so the gap between the
+      // two sections stays ≈16vh. Not on phones (swipe carousel, no pin).
+      const moment = $('.moment');
+      const swipe = $('#ultimate').classList.contains('ultimate--swipe');
+      const band = stage.getBoundingClientRect().bottom - controls.getBoundingClientRect().bottom;
+      moment.style.marginTop = !swipe && !startReduced && band > 48 ? `${-Math.round(band - 24)}px` : '';
       render();
     }
 
@@ -398,6 +419,7 @@
     return {
       head,
       track,
+      update,
       destroy() {
         cancelAnimationFrame(raf);
         ro.disconnect();
@@ -426,6 +448,8 @@
   }
 
   let heroIntro = null;     // built per-mode, played when the preloader leaves
+  let setupDoneResolve;
+  const setupDone = new Promise((r) => { setupDoneResolve = r; });   // deferred section setup finished
   let introPlayed = false;
 
   /* =========================================================================
@@ -455,14 +479,16 @@
       wordR.style.fontSize = prev;
     }
 
-    // Side-by-side layout: the whole frame — cap (≈6.5% down) to the end of the reflection
-    // (the frame's bottom edge) — sits between the nav and the viewport bottom, with ≥3vh of
-    // air under the nav and ≥6vh of empty space under the reflection. Bottle ≤ 80% of vh.
-    const BOTTLE = 0.82, CAP = 0.065, AIR_TOP = vh * 0.03, AIR_BOTTOM = vh * 0.06;
-    let h = Math.min((vh - AIR_BOTTOM - navH - AIR_TOP) / (1 - CAP), (vh * 0.8) / BOTTLE);
+    // Side-by-side layout: bottle (cap ≈6.5% → base ≈88% of the frame) ≈ 70% of vh. The visible
+    // reflection fades out by ≈95% of the frame; that span (cap → reflection end) is centred
+    // between the nav (+2vh) and a ≥6vh empty band at the bottom of the screen.
+    const BOTTLE = 0.815, CAP = 0.065, REFL = 0.95;
+    const roomTop = navH + vh * 0.02, roomBottom = vh * 0.94;
+    const room = roomBottom - roomTop;
+    let h = Math.min((vh * 0.7) / BOTTLE, room / (REFL - CAP));
     let w = Math.min(h * aspect, vw * 0.5);
     h = w / aspect;
-    let top = vh - AIR_BOTTOM - h;
+    let top = roomTop + (room - (REFL - CAP) * h) / 2 - CAP * h;
     // Word: ~13% smaller than the display maximum, and each group keeps ≥6vw from its
     // screen edge (the gap to the frame is the same on both sides).
     const side = (vw - w) / 2 - gap - vw * 0.06;
@@ -602,6 +628,14 @@
       const lineW = right ? vw - gutter - bodyW - 12 - px : px - gutter - bodyW - 12;
       set(el, '--line-w', Math.max(24, lineW));
     });
+    // Desktop / landscape tablet: the notes frame ends a band of empty grey above the stage
+    // bottom. The next section rises over exactly that band (minus 6px), so the gap from the
+    // frame to the Ultimate Collection heading stays ≈ 13–16vh. Phones / portrait tablets keep
+    // their labels in that band, so no overlap there.
+    const ult = document.getElementById('ultimate');
+    const band = vh - (y + h);
+    ult.style.marginTop = !notesStacked && !notesReduced && band > 12 ? `${-Math.round(band - 6)}px` : '';
+
     if (activeNotes) {
       // phone: width-fit, crop biased upward so the cap is kept; tiny 4% side safety fade
       activeNotes.fit = notesPhone ? 'width' : 'contain';
@@ -626,13 +660,24 @@
     const { isDesktop, isTablet, isMobile, reduce, portrait } = ctx.conditions;
     // Hero: both variants are portrait frames (-m is lighter, for phones).
     // Notes: portrait frames for phones and portrait tablets, landscape elsewhere.
-    const heroV = isMobile ? 'm' : 'd';
+    const heroV = isMobile && !CAPTURE ? 'm' : 'd';
     const v = isMobile || (isTablet && portrait) ? 'm' : 'd';
     const stacked = v === 'm';   // notes labels sit below the canvas
     const hero = getSeq('hero', heroV);
     const notes = getSeq('notes', v);
     activeHero = hero;
     hero.on('firstbatch', layoutHero);   // real frame aspect is known now
+    // The stage (and the nav, while the hero is pinned) take the tone of the frame on screen.
+    let heroOnScreen = true;
+    hero.onBg = (rgb) => {
+      root.style.setProperty('--hero-rgb', rgb);
+      if (heroOnScreen) root.style.setProperty('--nav-rgb', rgb);
+    };
+    ctx.add(() => () => {
+      hero.onBg = null;
+      root.style.removeProperty('--hero-rgb');
+      root.style.removeProperty('--nav-rgb');
+    });
     layoutHero();
     activeNotes = notes;
     notesStacked = stacked;
@@ -651,6 +696,7 @@
 
     /* ---------------- Reduced motion: static frames, simple fades ---------------- */
     if (reduce) {
+      setupDoneResolve();               // nothing is deferred in reduced-motion mode
       ['hero', 'notes'].forEach((name) => {
         const img = $(SEQ[name].img);
         img.src = lastFrameSrc(name, name === 'hero' ? heroV : v);
@@ -671,7 +717,8 @@
     }
 
     hero.load();
-    notes.loadWhenNear($('#notes'), '100% 0px');
+    if (CAPTURE) notes.load();
+    else notes.loadWhenNear($('#notes'), '100% 0px');
 
     // Everything below the hero is built in small separate tasks (while the preloader
     // is still up) so no single main-thread task blocks for long. Order is preserved,
@@ -682,7 +729,7 @@
     const drain = () => {
       if (!alive) return;
       // The preloader refreshes on reveal; only re-measure here if it has already gone.
-      if (!queue.length) { if (introPlayed) ScrollTrigger.refresh(); return; }
+      if (!queue.length) { if (introPlayed) ScrollTrigger.refresh(); setupDoneResolve(); return; }
       ctx.add(queue.shift());
       setTimeout(drain, 0);
     };
@@ -696,10 +743,22 @@
       scrollTrigger: {
         trigger: '.hero', start: 'top top',
         end: isMobile ? '+=180%' : '+=250%',
-        pin: true, scrub: 0.5, anticipatePin: 1, invalidateOnRefresh: true,
+        pin: true, scrub: SCRUB, anticipatePin: 1, invalidateOnRefresh: true,
         toggleClass: { targets: '.hero', className: 'is-active' },
+        onToggle: (self) => {
+          heroOnScreen = self.isActive;
+          const tone = root.style.getPropertyValue('--hero-rgb');
+          if (self.isActive && tone) root.style.setProperty('--nav-rgb', tone);
+          else root.style.removeProperty('--nav-rgb');
+        },
       },
     });
+    // Hero → Signature Collection: the collection rises over the pinned hero for the hero's
+    // last 15% (15% of the 250% / 180% pin), so its heading is already fading in as the
+    // sequence ends and there is no empty screen between the two.
+    gsap.set('.collection', { marginTop: isMobile ? '-27svh' : '-37.5svh' });
+    $('.collection').classList.add('collection--curtain');
+    ctx.add(() => () => $('.collection').classList.remove('collection--curtain'));
     heroTl
       .to(heroProxy, { p: 1, duration: 1, onUpdate: () => hero.setProgress(heroProxy.p) }, 0)
       .to('.hero__word-l', { x: () => -drift(), opacity: 0, duration: 0.28, ease: 'power1.in' }, 0)
@@ -806,7 +865,7 @@
         scrollTrigger: {
           trigger: '#notes', start: 'top top',
           end: isMobile ? '+=150%' : '+=200%',
-          pin: true, scrub: 0.5, anticipatePin: 1, invalidateOnRefresh: true,
+          pin: true, scrub: SCRUB, anticipatePin: 1, invalidateOnRefresh: true,
           toggleClass: { targets: '#notes', className: 'is-active' },
         },
       });
@@ -817,6 +876,7 @@
         .fromTo(notesVisual, { scale: () => notesInit.s, y: () => notesInit.y }, { scale: 1, y: 0, duration: 0.2, ease: 'power1.inOut' }, 0)
         // the orbit draws itself across the whole pin
         .fromTo('.notes__ring circle', { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 1 }, 0);
+      // (the Ultimate Collection's overlap with the notes pin is set in layoutNotes)
       [['.note--top', 0.3], ['.note--heart', 0.55], ['.note--base', 0.8]].forEach(([sel, at]) => {
         notesTl
           .fromTo(`${sel} .note__line path`, { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.07 }, at)
@@ -835,6 +895,17 @@
           y: 28, autoAlpha: 0, duration: 0.9, ease: 'power3.out', stagger: 0.12,
           scrollTrigger: { trigger: '#ultimate', start: 'top 80%', once: true },
         });
+        if (CAPTURE) {
+          // no touch in a recording: page scroll swipes through all six bottles instead
+          ScrollTrigger.create({
+            trigger: '#ultimate', start: 'top 55%', end: 'bottom 45%',
+            onUpdate: (self) => {
+              const t = swipe.track;
+              t.scrollLeft = self.progress * (t.scrollWidth - t.clientWidth);
+              swipe.update();
+            },
+          });
+        }
         return;
       }
       carousel.layout();
@@ -843,9 +914,10 @@
         defaults: { ease: 'none' },
         scrollTrigger: {
           trigger: '#ultimate', start: 'top top', end: '+=150%',
-          pin: true, scrub: 0.5, anticipatePin: 1,
+          pin: true, scrub: SCRUB, anticipatePin: 1,
           // one turn = 6 steps; when scrolling settles, the nearest bottle snaps to the front
-          snap: { snapTo: 1 / 6, inertia: false, directional: false, duration: { min: 0.2, max: 0.6 }, delay: 0.08, ease: 'power2.inOut' },
+          // (not in capture mode: the recorder owns the scroll position)
+          snap: CAPTURE ? false : { snapTo: 1 / 6, inertia: false, directional: false, duration: { min: 0.2, max: 0.6 }, delay: 0.08, ease: 'power2.inOut' },
           toggleClass: { targets: '#ultimate', className: 'is-active' },
         },
       }).to(carProxy, { d: 360, duration: 1, onUpdate: () => carousel.setScroll(carProxy.d) });
@@ -906,6 +978,12 @@
   const pct = $('#preloaderPct');
 
   function runPreloader() {
+    if (CAPTURE) {
+      pre.remove();
+      introPlayed = true;
+      if (heroIntro) heroIntro.progress(1);
+      return;
+    }
     lockScroll(true);
     const v = matchMedia(BP.isMobile).matches ? 'm' : 'd';
     const heroSeq = seqs[`hero-${v}`];
@@ -947,6 +1025,60 @@
   }
 
   runPreloader();
+
+  /* =========================================================================
+     CAPTURE API (only with ?capture=1)
+     ========================================================================= */
+  if (CAPTURE) {
+    const sectionTriggers = {};
+    const maxScroll = () => document.documentElement.scrollHeight - innerHeight;
+    const clamp = (v) => Math.round(Math.max(0, Math.min(maxScroll(), v)));
+    // Pinned sections report their pin range; the others: start = section top at the viewport
+    // top, end = section bottom at the viewport bottom (never before start). Footer ends at the
+    // very bottom of the page.
+    const SECTIONS = {
+      hero: '.hero', signature: '.collection', art: '.art', notes: '#notes',
+      ultimate: '#ultimate', moments: '.moment', footer: '.footer',
+    };
+
+    window.__captureReady = (async () => {
+      await setupDone;
+      if (document.fonts) await document.fonts.ready;
+      // every image eager + decoded, so nothing pops in mid-recording
+      const imgs = $$('img');
+      imgs.forEach((img) => { img.loading = 'eager'; });
+      await Promise.all(imgs.map((img) => (img.complete && img.naturalWidth ? Promise.resolve() : img.decode().catch(() => {}))));
+      // every frame of the active hero and notes sequences
+      await Promise.all([activeHero, activeNotes].filter(Boolean).map((s) => { s.load(); return s.whenComplete(); }));
+      ScrollTrigger.refresh();
+      Object.entries(SECTIONS).forEach(([name, sel]) => {
+        const pinned = ScrollTrigger.getAll().find((s) => s.pin && s.trigger === $(sel));
+        sectionTriggers[name] = pinned || ScrollTrigger.create({ trigger: sel, start: 'top top', end: 'bottom bottom' });
+      });
+      window.scrollTo(0, 0);
+      ScrollTrigger.update();
+      return true;
+    })();
+
+    Object.defineProperty(window, '__captureSections', {
+      get() {
+        const out = {};
+        Object.entries(sectionTriggers).forEach(([name, st]) => {
+          const start = clamp(st.start);
+          out[name] = { start, end: name === 'footer' ? clamp(maxScroll()) : Math.max(start, clamp(st.end)) };
+        });
+        return out;
+      },
+    });
+
+    window.__captureStep = (scrollY, timeSeconds) => {
+      window.scrollTo(0, scrollY);
+      gsap.updateRoot(captureBase + timeSeconds);
+      ScrollTrigger.update();
+      [activeHero, activeNotes].forEach((s) => s && s.drawNow());
+      return new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    };
+  }
 
   // (ScrollTrigger re-measures on window load by itself; SplitText autoSplit re-splits after fonts load.)
 })();
